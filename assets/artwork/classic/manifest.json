@@ -1415,6 +1415,10 @@
     "source": "gould",
     "url": "https://digital.lib.ku.edu/ku-gould/14954"
   },
+  "birds/coragyps-atratus.webp": {
+    "source": "martinet",
+    "url": "https://commons.wikimedia.org/wiki/File:Catharista_atrata_-_1700-1880_-_Print_-_Iconographia_Zoologica_-_Special_Collections_University_of_Amsterdam_-_UBA01_IZ18100121.tif"
+  },
   "birds/corthylio-calendula-2.webp": {
     "source": "audubon",
     "url": "https://www.audubon.org/art/birds-of-america/ruby-crowned-wren"
@@ -3323,6 +3327,10 @@
     "source": "vonwright",
     "url": "https://commons.wikimedia.org/wiki/File:Bird_illustration_from_Svenska_F%C3%A5glar_(Swedish_Birds)_by_the_von_Wright_brothers_from_rawpixel%27s_original_edition_of_the_publication_00070.jpg"
   },
+  "birds/passerculus-sandwichensis.webp": {
+    "source": "audubon",
+    "url": "https://media.audubon.org/boa_illustration/plate-109-savannah-finch.jpg"
+  },
   "birds/passerella-iliaca.webp": {
     "source": "audubon",
     "url": "https://commons.wikimedia.org/wiki/File:The_birds_of_America_(Pl._188)_(8571225681).jpg"
@@ -4323,6 +4331,10 @@
     "source": "fuertes",
     "url": "https://commons.wikimedia.org/wiki/File:Annual_report_(1912)_(18241716050).jpg"
   },
+  "birds/spizella-pusilla.webp": {
+    "source": "audubon",
+    "url": "https://media.audubon.org/boa_illustration/plate-139-field-sparrow.jpg"
+  },
   "birds/spodiopsar-cineraceus.webp": {
     "source": "siebold",
     "url": "https://commons.wikimedia.org/wiki/File:Sturnus_cineraceus_-_1833-1850_-_Print_-_Iconographia_Zoologica_-_Special_Collections_University_of_Amsterdam_-_UBA01_IZ15800089.tif"
@@ -4430,6 +4442,10 @@
   "birds/strix-varia.webp": {
     "source": "gould",
     "url": "https://commons.wikimedia.org/wiki/File:GouldBirdsEuropeIBarred_Owl.jpg"
+  },
+  "birds/sturnella-magna.webp": {
+    "source": "audubon",
+    "url": "https://media.audubon.org/boa_illustration/plate-136-meadow-lark.jpg"
   },
   "birds/sturnella-neglecta-2.webp": {
     "source": "audubon",
