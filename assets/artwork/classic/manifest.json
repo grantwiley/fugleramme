@@ -1771,6 +1771,10 @@
     "source": "gould",
     "url": "https://commons.wikimedia.org/wiki/File:GouldBirdsEuropeIVLittle_Egret.jpg"
   },
+  "birds/egretta-thula.webp": {
+    "source": "audubon",
+    "url": "https://media.audubon.org/boa_illustration/plate-242-snowy-heron.jpg"
+  },
   "birds/elanoides-forficatus.webp": {
     "source": "gould",
     "url": "https://commons.wikimedia.org/wiki/File:The_birds_of_Europe_(9398548273).jpg"
@@ -2570,6 +2574,10 @@
   "birds/larus-canus.webp": {
     "source": "gould",
     "url": "https://digital.lib.ku.edu/ku-gould/9624"
+  },
+  "birds/larus-delawarensis.webp": {
+    "source": "audubon",
+    "url": "https://media.audubon.org/boa_illustration/plate-212-common-american-gull.jpg"
   },
   "birds/larus-fuscus-2.webp": {
     "source": "vonwright",
@@ -4379,6 +4387,10 @@
     "source": "gould",
     "url": "https://commons.wikimedia.org/wiki/File:GouldBirdsEuropeVRoseate_Tern.jpg"
   },
+  "birds/sterna-forsteri.webp": {
+    "source": "audubon",
+    "url": "https://media.audubon.org/boa_illustration/plate-409-havells-tern.jpg"
+  },
   "birds/sterna-hirundo-2.webp": {
     "source": "vonwright",
     "url": "https://commons.wikimedia.org/wiki/File:Bird_illustration_from_Svenska_F%C3%A5glar_(Swedish_Birds)_by_the_von_Wright_brothers_from_rawpixel%27s_original_edition_of_the_publication_00058.jpg"
@@ -4694,6 +4706,10 @@
   "birds/tringa-glareola.webp": {
     "source": "vonwright",
     "url": "https://commons.wikimedia.org/wiki/File:Bird_illustration_from_Svenska_F%C3%A5glar_(Swedish_Birds)_by_the_von_Wright_brothers_from_rawpixel%27s_original_edition_of_the_publication_00086.jpg"
+  },
+  "birds/tringa-melanoleuca.webp": {
+    "source": "audubon",
+    "url": "https://media.audubon.org/boa_illustration/plate-308-tell-tale-godwit-or-snipe.jpg"
   },
   "birds/tringa-nebularia-2.webp": {
     "source": "vonwright",
