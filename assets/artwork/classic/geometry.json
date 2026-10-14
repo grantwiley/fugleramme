@@ -11303,6 +11303,18 @@
    822
   ]
  },
+ "birds/podilymbus-podiceps.webp": {
+  "box": [
+   0.33,
+   0.0,
+   1.0,
+   1.0
+  ],
+  "cut": [
+   1200,
+   1115
+  ]
+ },
  "birds/poecile-atricapillus-2.webp": {
   "box": [
    0.07084468664850137,

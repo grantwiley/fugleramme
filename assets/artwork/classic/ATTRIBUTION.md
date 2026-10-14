@@ -209,3 +209,5 @@ CC BY 2.0. Manifest key: `jardine`.
 **Palmstruch** - *Svensk botanik* by **Johan Wilhelm Palmstruch** (1802-1843), hand-coloured engravings by **Carl Wilhelm Venus**. New York Botanical Garden scans via the [Internet Archive](https://archive.org/details/svenskbotanik03palm). Public domain. Manifest key: `palmstruch`.
 
 **Michaux** - *The North American Sylva* by **François André Michaux** (1819 English edition), plates after **Pancrace Bessa**. Biodiversity Heritage Library scans via Wikimedia Commons. Public domain (PD-old-100). Manifest key: `michaux`.
+
+**Catesby** - *The Natural History of Carolina, Florida and the Bahama Islands* by **Mark Catesby** (1731-1743), hand-coloured etchings. **National Gallery of Art**, Washington, scans via [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Mark_Catesby,_The_Pied-billed_Dobchick_(Colymbus_podiceps),_published_1731-1743,_NGA_50732.jpg). CC0 / public domain. Manifest key: `catesby`.
