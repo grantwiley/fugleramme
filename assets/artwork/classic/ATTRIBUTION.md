@@ -211,3 +211,5 @@ CC BY 2.0. Manifest key: `jardine`.
 **Michaux** - *The North American Sylva* by **François André Michaux** (1819 English edition), plates after **Pancrace Bessa**. Biodiversity Heritage Library scans via Wikimedia Commons. Public domain (PD-old-100). Manifest key: `michaux`.
 
 **Catesby** - *The Natural History of Carolina, Florida and the Bahama Islands* by **Mark Catesby** (1731-1743), hand-coloured etchings. **National Gallery of Art**, Washington, scans via [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Mark_Catesby,_The_Pied-billed_Dobchick_(Colymbus_podiceps),_published_1731-1743,_NGA_50732.jpg). CC0 / public domain. Manifest key: `catesby`.
+
+**Sugar maple branches** - the seasonal branches in `branches/` are not scans. They were drawn with an image model after plate 42 (Sugar Maple) of Michaux's *The North American Sylva* (1819), drawn by **Henri-Joseph Redouté** and engraved by **Gabriel**, the summer branch first and each other season as an edit of it. Manifest key: `generated`.

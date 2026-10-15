@@ -45,6 +45,7 @@ COPY assets/fonts ./assets/fonts
 COPY assets/artwork/custom ./assets/artwork/custom
 COPY assets/artwork/classic/ATTRIBUTION.md assets/artwork/classic/manifest.json ./assets/artwork/classic/
 COPY assets/artwork/classic/perches ./assets/artwork/classic/perches
+COPY assets/artwork/classic/branches ./assets/artwork/classic/branches
 
 # The plates are 165 MB, so they ship as a layer per letter: the registry serves
 # blobs by digest, and the ranges a release did not touch are already on disk.
