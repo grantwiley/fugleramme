@@ -76,16 +76,24 @@ def _probes(mask: np.ndarray) -> list[tuple[int, np.ndarray]]:
     return probes
 
 
+def clear_top(blocked: np.ndarray | None) -> int:
+    """The first row below everything `blocked` takes: the top of the bare paper under the branch."""
+    if blocked is None:
+        return 0
+    rows = np.nonzero(blocked.any(axis=1))[0]
+    return int(rows[-1]) + 1 if rows.size else 0
+
+
 def _pinned(
-    sprite: Sprite, anchor: tuple[int, int], width: int, height: int
+    sprite: Sprite, anchor: tuple[int, int], width: int, height: int, top: int = 0
 ) -> tuple[int, int] | None:
-    """Where `anchor` lands on the middle of the page, slid back on if that runs
-    the sprite off an edge. None if the sprite is bigger than the page."""
+    """Where `anchor` lands on the middle of the page below `top`, slid back on
+    if that runs the sprite off an edge. None if the sprite is bigger than the page."""
     h, w = sprite.mask.shape
     if w > width or h > height:
         return None
     x = min(max(0, width // 2 - anchor[0]), width - w)
-    y = min(max(0, height // 2 - anchor[1]), height - h)
+    y = min(max(0, (top + height) // 2 - anchor[1]), height - h)
     return x, y
 
 
@@ -125,8 +133,12 @@ def spiral(
     occ = np.zeros((height, width), dtype=bool) if blocked is None else blocked.copy()
     placed: Placed = []
     for n, sprite in enumerate(sprites):
-        spot = _pinned(sprite, anchor, width, height) if anchor and n == 0 else None
-        # No anchor, or the middle is under the branch: the first free place instead.
+        spot = (
+            _pinned(sprite, anchor, width, height, clear_top(blocked))
+            if anchor and n == 0
+            else None
+        )
+        # No anchor, or it still reaches the branch: the first free place instead.
         if spot is None or _collides(occ, sprite.mask, spot):
             spot = _first_free(occ, sprite.mask)
         if spot is None:
@@ -241,7 +253,11 @@ def scored(
         ok = board.legal(mask, w, h)
         if not ok.any():
             return None
-        spot = _pinned(sprite, anchor, width, height) if anchor and n == 0 else None
+        spot = (
+            _pinned(sprite, anchor, width, height, clear_top(blocked))
+            if anchor and n == 0
+            else None
+        )
         if spot and ok[spot[1] // K, spot[0] // K]:
             y, x = spot[1] // K, spot[0] // K
         else:

@@ -409,7 +409,9 @@ def _placements(
         if spotlit:
             index, centre = spotlit
             share = min(SPOTLIGHT_SHARE * ratios[index], _MAX_SHARE)
-            pin = _Pin(index, round(share * min(box)), centre)
+            # Off the paper the branch leaves, or the bird outgrows it and nothing fits.
+            clear = (box[0], box[1] - packing.clear_top(blocked))
+            pin = _Pin(index, round(share * min(clear)), centre)
             order = [index, *order]
         alphas = [img.getchannel("A") for img in arts]
         args = (names, alphas, order, weights, flips, base, *box)

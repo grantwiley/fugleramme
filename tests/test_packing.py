@@ -66,6 +66,21 @@ def test_a_page_with_a_branch_keeps_its_birds_off_it(crowded, tmp_path):
 
 
 @pytest.mark.parametrize("layout", sorted(LAYOUTS))
+def test_the_spotlit_bird_fits_under_the_branch_with_everyone_else(crowded, tmp_path, layout):
+    """Sized off the page alone, the spotlit bird was taller than the paper the
+    branch leaves, so no size fitted and the page drew the branch by itself."""
+    branch = tmp_path / "autumn.png"
+    Image.new("RGBA", (300, 80), (200, 60, 20, 255)).save(branch)  # as deep as the frame allows
+    tall = tmp_path / "heron.png"
+    Image.new("RGBA", (150, 200), (40, 40, 40, 255)).save(tall)
+    entries = [("Genus species0", tall), *crowded(5)]
+    collage._layouts.clear()
+    render_collage(entries, (800, 600), layout=layout, spotlight="Genus species0", branch=branch)
+    (placed, px), *_ = collage._layouts.values()
+    assert len(placed) == 6 and px  # every bird, names included
+
+
+@pytest.mark.parametrize("layout", sorted(LAYOUTS))
 def test_a_set_that_cannot_fit_is_reported_rather_than_squeezed(layout):
     assert LAYOUTS[layout].pack(_sprites(4), 100, 60) is None
 
