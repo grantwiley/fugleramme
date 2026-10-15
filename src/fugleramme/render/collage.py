@@ -50,6 +50,7 @@ from .page import (
     draw_mark,
     draw_perch,
     figures_mask,
+    fit,
     flatten,
     label_px,
     mark_room,
@@ -94,6 +95,12 @@ SPOTLIGHT_SHARE = 0.6
 SPOTLIGHT_GAP = 0.05  # bare paper kept round it, of its own size
 SPOTLIGHT_LABEL = 1.5  # its name, against the other birds' names
 _KEY_SHARE = 0.4  # the most of the page the key may take, across its depth
+# The frame's seasonal branch reaches in from the top-left corner of the page,
+# taking at most this much of its width and of its height. The birds pack round it.
+_BRANCH_SPAN = 1.0
+_BRANCH_DEPTH = 0.36
+_BRANCH_GAP = 0.012  # bare paper kept between it and the birds, of the short side
+_ALONE_SPAN = 0.8  # with no birds it is drawn this much of the page across
 _KEY_LEADING = 1.2  # the key's line height, em
 
 # (text, font, flat) -> the label's alpha mask, as page.text_mask draws it.
@@ -177,15 +184,25 @@ class _Sprite:
     label_w: int = 0  # the reserved box; the redrawn name is centred in it
 
 
-def _center(placed, width: int, height: int):
-    """Shift the packed cluster so its bounding box is centred on the canvas."""
+def _center(placed, width: int, height: int, blocked: np.ndarray | None = None):
+    """Shift the packed cluster so its bounding box is centred on the canvas,
+    or as near it as the branch allows: centred across only, or left alone."""
     xs0 = min(x for _, x, _ in placed)
     ys0 = min(y for _, _, y in placed)
     xs1 = max(x + s.mask.shape[1] for s, x, _ in placed)
     ys1 = max(y + s.mask.shape[0] for s, _, y in placed)
     dx = (width - (xs1 - xs0)) // 2 - xs0
     dy = (height - (ys1 - ys0)) // 2 - ys0
-    return [(sprite, x + dx, y + dy) for sprite, x, y in placed]
+    for sx, sy in ((dx, dy), (dx, 0)):
+        moved = [(sprite, x + sx, y + sy) for sprite, x, y in placed]
+        if blocked is None or not any(_under(blocked, *m) for m in moved):
+            return moved
+    return placed
+
+
+def _under(blocked: np.ndarray, sprite: _Sprite, x: int, y: int) -> bool:
+    h, w = sprite.mask.shape
+    return bool((blocked[y : y + h, x : x + w] & sprite.mask).any())
 
 
 def _with_label(
@@ -249,6 +266,7 @@ def _layout(
     layout: str,
     mask_of: _Mask = text_mask,
     pin: _Pin | None = None,
+    blocked: np.ndarray | None = None,
 ):
     """Shrink the set until every bird, name included, fits, then bisect back
     toward the size that failed, for as many steps as the layout affords.
@@ -290,10 +308,12 @@ def _layout(
                 _with_label(i, dim, mask, labels[n], spacing) if font_key else _Sprite(i, dim, mask)
             )
         anchor = _at(sprites[0].art_at, 1, centre_at) if pin else None
-        placed = chosen.pack(sprites, width, height, anchor)
+        placed = chosen.pack(sprites, width, height, anchor, blocked)
         if placed is None:
             return None
-        return (placed if pin else _center(placed, width, height)), px
+        if pin:
+            return placed, px
+        return _center(placed, width, height, blocked), px
 
     fit = None
     failed = None  # the smallest size that did not fit, if any did
@@ -353,6 +373,7 @@ def _placements(
     margin: Edges,
     mask_of: _Mask,
     spotlit: tuple[int, tuple[float, float]] | None = None,
+    blocked: np.ndarray | None = None,
 ) -> tuple[tuple[_Placed, ...], int]:
     """Pack the page, or return the cached packing. A kiosk locked to the panel
     packs identically to it - only `scale` and the paper differ - so whichever
@@ -375,9 +396,10 @@ def _placements(
         mass = dict(zip(rest, _size_weights([names[i] for i in rest]), strict=True)) if rest else {}
         weights = [mass.get(i, 0.0) * r for i, r in enumerate(ratios)]
         order = sorted(rest, key=lambda i: -weights[i])
+        free = width * height - (int(blocked.sum()) if blocked is not None else 0)
         base = (
             min(
-                math.sqrt(width * height * 1.5 / sum(weights[i] ** 2 for i in rest)),
+                math.sqrt(free * 1.5 / sum(weights[i] ** 2 for i in rest)),
                 min(width, height) * _MAX_SHARE / max(weights[i] for i in rest),
             )
             if rest
@@ -392,10 +414,11 @@ def _placements(
         alphas = [img.getchannel("A") for img in arts]
         args = (names, alphas, order, weights, flips, base, *box)
 
-        placed, used_px = _layout(*args, font_key, name_px, label_text, layout, mask_of, pin)
+        rest_of = (name_px, label_text, layout, mask_of, pin, blocked)
+        placed, used_px = _layout(*args, font_key, *rest_of)
         if placed is None and font_key:  # birds beat blank paper
             log.warning("No layout fits %d species with names at %dx%d", len(names), *box)
-            placed, used_px = _layout(*args, None, name_px, label_text, layout, mask_of, pin)
+            placed, used_px = _layout(*args, None, *rest_of)
 
         result = (
             tuple(
@@ -431,6 +454,7 @@ def render_collage(
     margin: Edges = _DEFAULT_EDGES,
     name_key: bool = False,
     spotlight: str | None = None,
+    branch: Path | None = None,
 ) -> Image.Image:
     """Composite the given (name, image) entries into a tightly packed collage.
 
@@ -442,16 +466,30 @@ def render_collage(
     margin: bare paper along each edge, as fractions of the short side.
     name_key: with names on, number the birds and list the names in a key.
     spotlight: the entry drawn large in the middle, the rest packed round it.
+    branch: the season's branch framing the page, the birds packed round it.
+        With no birds it stands in for the perch.
     """
     canvas = blank(resolution, textured)
 
     kept = [(name, path) for name, path in entries if path is not None]
+    if not kept and branch:
+        _draw_alone(canvas, branch, textured)
+        return canvas
     if not kept:
         draw_perch(canvas, perches, day_ordinal(), textured)
         return canvas
     if show_names and name_key:
         _draw_keyed(
-            canvas, kept, textured, font_key, label_size, label_text, layout, margin, spotlight
+            canvas,
+            kept,
+            textured,
+            font_key,
+            label_size,
+            label_text,
+            layout,
+            margin,
+            spotlight,
+            branch,
         )
         return canvas
 
@@ -472,6 +510,7 @@ def render_collage(
         layout,
         margin,
         spotlight=spotlight,
+        branch=branch,
     )
     # Names last: halos feather past the collision mask, so a name drawn inline
     # with the birds would be washed over by the next neighbour.
@@ -497,10 +536,11 @@ def _draw_birds(
     margin: Edges,
     mask_of: _Mask = text_mask,
     spotlight: str | None = None,
+    branch: Path | None = None,
 ) -> tuple[tuple[_Placed, ...], int]:
     """Pack the birds into a `pack` box and draw them at `origin`, `scale`
-    times larger, labels reserved but not drawn. Returns the placements and
-    the label size they packed at."""
+    times larger, labels reserved but not drawn, under `branch` if there is
+    one. Returns the placements and the label size they packed at."""
     arts = [trim(path) for _, path in kept]
     # Mass sizes the bird; this sizes the plate it is drawn on.
     ratios = [span_ratio(path, art.size) for (_, path), art in zip(kept, arts, strict=True)]
@@ -519,7 +559,9 @@ def _draw_birds(
         layout,
         margin,
         spotlight,
+        str(branch) if branch else None,
     )
+    bough = _hung(branch, pack, margin) if branch else None
     placed, used_px = _placements(
         key,
         arts,
@@ -535,15 +577,74 @@ def _draw_birds(
         margin,
         mask_of,
         _spotlit(kept, arts, spotlight),
+        _blocked(bough, pack, margin) if bough else None,
     )
 
+    if bough:
+        _lay(
+            canvas,
+            _scaled(bough.art, max(1, round(bough.dim * scale)), False),
+            bough.at,
+            scale,
+            origin,
+            textured,
+        )
     for p in placed:
         art = _scaled(arts[p.index], max(1, round(p.dim * scale)), flips[p.index])
-        at = _at(p.at, scale, origin)
-        corner = (at[0] - PAD, at[1] - PAD)
-        proc = process_sprite(art, corner, textured=textured)
-        canvas.paste(proc, corner, proc)
+        _lay(canvas, art, p.at, scale, origin, textured)
     return placed, used_px
+
+
+def _draw_alone(canvas: Image.Image, branch: Path, textured: bool) -> None:
+    """Nothing heard: the season's branch by itself across the middle of the page."""
+    w, h = canvas.size
+    art = fit(trim(branch), (round(w * _ALONE_SPAN), round(h * _ALONE_SPAN)))
+    _lay(canvas, art, ((w - art.width) // 2, (h - art.height) // 2), 1.0, (0, 0), textured)
+
+
+def _lay(
+    canvas: Image.Image,
+    art: Image.Image,
+    at: tuple[int, int],
+    scale: float,
+    origin: tuple[int, int],
+    textured: bool,
+) -> None:
+    """Paste art already drawn at the output size onto the paper at `at` (pack pixels)."""
+    x, y = _at(at, scale, origin)
+    corner = (x - PAD, y - PAD)
+    proc = process_sprite(art, corner, textured=textured)
+    canvas.paste(proc, corner, proc)
+
+
+class _Bough(NamedTuple):
+    """The frame's branch as hung on one page, in pack pixels."""
+
+    art: Image.Image  # trimmed
+    dim: int  # its longest side
+    at: tuple[int, int]  # its top-left corner on the page
+
+
+def _hung(branch: Path, pack: tuple[int, int], margin: Edges) -> _Bough:
+    """The branch as large as `_BRANCH_SPAN` and `_BRANCH_DEPTH` allow, its cut
+    end in the top-left corner of the paper inside the margin."""
+    art = trim(branch)
+    x0, y0, x1, y1 = margin.window(pack)
+    fit = min((x1 - x0) * _BRANCH_SPAN / art.width, (y1 - y0) * _BRANCH_DEPTH / art.height)
+    w, h = round(art.width * fit), round(art.height * fit)
+    return _Bough(art, max(w, h), (x0, y0))
+
+
+def _blocked(bough: _Bough, pack: tuple[int, int], margin: Edges) -> np.ndarray:
+    """The paper the branch takes, gap included, over the packing box inside the margin."""
+    x0, y0, x1, y1 = margin.window(pack)
+    gap = round(min(pack) * _BRANCH_GAP)
+    mask = _grow(_footprint(_scaled(bough.art.getchannel("A"), bough.dim, False)), gap)
+    # _grow padded the mask by `gap` all round, so pad the box to match and crop after.
+    page = np.zeros((y1 - y0 + 2 * gap, x1 - x0 + 2 * gap), dtype=bool)
+    x, y = bough.at[0] - x0, bough.at[1] - y0
+    page[y : y + mask.shape[0], x : x + mask.shape[1]] = mask
+    return page[gap : page.shape[0] - gap, gap : page.shape[1] - gap]
 
 
 def _spotlit(
@@ -682,6 +783,7 @@ def _draw_keyed(
     layout: str,
     margin: Edges,
     spotlight: str | None = None,
+    branch: Path | None = None,
 ) -> None:
     """The birds with a number each, and their names in a key. The key is fitted
     in pack pixels like the birds, so every output of one page gets one layout."""
@@ -710,6 +812,7 @@ def _draw_keyed(
         NO_MARGIN,
         _figures_box(count),
         spotlight,
+        branch,
     )
     held = next((i for i, (name, _) in enumerate(kept) if name == spotlight), None)
     order = _numbered(placed, bx1 - bx0, by1 - by0, held)

@@ -19,7 +19,7 @@ import logging
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING
 from PIL import Image
 
 from .languages import STATION, Drawable, Namer, english_name, station_locale
-from .names import drawable_keys, image_for, normalize, perches_for, resolve
+from .names import branch_for, drawable_keys, image_for, normalize, perches_for, resolve
 from .picks import Picks
 from .render import fonts
 from .render.collage import KEY_LIMIT, NO_LIMIT, gather_entries, render_collage, selected_species
@@ -72,6 +72,9 @@ class Context:
 
     def perches(self):
         return perches_for(self.images_dir, self.style)
+
+    def branch(self) -> Path | None:
+        return branch_for(self.images_dir, self.style, date.today())
 
     def drawable(self):
         """Species keys this style can draw. One listing, not a glob per name:
@@ -218,10 +221,12 @@ def _collage_key(ctx: Context) -> tuple:
     # places across it while the set of species heard sits still.
     species = tuple(_selected(ctx))
     spotlit = _spotlit(ctx)
+    branch = ctx.branch()
     return (
         species,
         spotlit if spotlit in species else None,
         day_ordinal() if not species else None,
+        str(branch) if branch else None,  # a new season repaints
     )
 
 
@@ -249,6 +254,7 @@ def _collage(ctx: Context) -> Image.Image:
         ctx.margin,
         ctx.name_key,
         spotlit,
+        ctx.branch(),
     )
 
 

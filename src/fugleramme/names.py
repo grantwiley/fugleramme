@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import date
 from pathlib import Path
 
 from .config import REPO_ROOT
@@ -39,6 +40,7 @@ from .picks import Picks
 
 BIRDS = "birds"
 PERCHES = "perches"
+BRANCHES = "branches"  # the branch framing the collage, one file per season
 MANIFEST = "manifest.json"  # a style's record: "<file>.webp" -> {"source", "url"}
 ALIASES = REPO_ROOT / "assets" / "birdnet_aliases.json"
 
@@ -206,6 +208,28 @@ def perches_for(images_dir: Path, style: str) -> list[Path]:
     like the birds: a perch is drawn in the same hand as the birds it stands in
     for, so a style without any draws none rather than borrowing another's."""
     return artwork_in(images_dir / style / PERCHES) if style else []
+
+
+def season(day: date) -> str:
+    """The season as a sugar maple in the Shenandoah Valley keeps it: in flower
+    in March and April, in leaf to September, coloured in October and November,
+    bare from December."""
+    if day.month in (3, 4):
+        return "spring"
+    if 5 <= day.month <= 9:
+        return "summer"
+    if day.month in (10, 11):
+        return "autumn"
+    return "winter"
+
+
+def branch_for(images_dir: Path, style: str, day: date) -> Path | None:
+    """The style's branch for `day`'s season (`branches/<season>.webp`), or None:
+    a style without one draws the collage unframed."""
+    if not style:
+        return None
+    wanted = season(day)
+    return next((p for p in artwork_in(images_dir / style / BRANCHES) if p.stem == wanted), None)
 
 
 _manifests: dict[Path, tuple[float, dict[str, dict[str, str]]]] = {}

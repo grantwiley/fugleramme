@@ -35,6 +35,37 @@ def test_a_packed_page_never_overlaps_and_never_clips(layout):
 
 
 @pytest.mark.parametrize("layout", sorted(LAYOUTS))
+@pytest.mark.parametrize("anchor", [None, (30, 30)])
+def test_no_bird_lands_on_the_branch_even_one_pinned_to_the_middle(layout, anchor):
+    """The branch hangs over the middle of this page, where the spiral starts
+    and a spotlit bird is pinned; both have to go somewhere clear instead."""
+    width, height = 500, 400
+    blocked = np.zeros((height, width), dtype=bool)
+    blocked[:230, 40:470] = True  # deeper than half the page, off-centre
+    placed = LAYOUTS[layout].pack(_sprites(6), width, height, anchor, blocked)
+    assert placed is not None
+    for sprite, x, y in placed:
+        h, w = sprite.mask.shape
+        assert not (blocked[y : y + h, x : x + w] & sprite.mask).any()
+
+
+def test_a_page_with_a_branch_keeps_its_birds_off_it(crowded, tmp_path):
+    """Through the whole render, recentring included: a solid bar for a branch
+    stays whole, with no dark bird drawn anywhere across it."""
+    branch = tmp_path / "autumn.png"
+    Image.new("RGBA", (300, 60), (200, 60, 20, 255)).save(branch)
+    page = np.asarray(
+        render_collage(crowded(6), (500, 400), show_names=False, branch=branch).convert("RGB")
+    ).astype(int)
+    bar = (abs(page[..., 0] - 200) < 30) & (abs(page[..., 1] - 60) < 30) & (page[..., 2] < 60)
+    ys, xs = np.nonzero(bar)
+    assert ys.size and ys.min() < 400 * 0.1  # hung from the top
+    birds = page.max(axis=2) < 80
+    assert birds.any()
+    assert not birds[ys.min() : ys.max() + 1, xs.min() : xs.max() + 1].any()
+
+
+@pytest.mark.parametrize("layout", sorted(LAYOUTS))
 def test_a_set_that_cannot_fit_is_reported_rather_than_squeezed(layout):
     assert LAYOUTS[layout].pack(_sprites(4), 100, 60) is None
 

@@ -36,9 +36,12 @@ class Sprite(Protocol):
 
 
 Placed = list[tuple[Sprite, int, int]]
-# (sprites, width, height, anchor): `anchor` is the point of the first sprite
-# pinned to the middle of the page.
-Packer = Callable[[Sequence[Sprite], int, int, tuple[int, int] | None], Placed | None]
+# (sprites, width, height, anchor, blocked): `anchor` is the point of the first
+# sprite pinned to the middle of the page; `blocked` is page already taken (the
+# frame's branch), a width x height bool array.
+Packer = Callable[
+    [Sequence[Sprite], int, int, tuple[int, int] | None, np.ndarray | None], Placed | None
+]
 Cost = Callable[["Board", np.ndarray], np.ndarray]
 
 _STEP = 6  # spiral: pixels between candidate positions
@@ -86,6 +89,12 @@ def _pinned(
     return x, y
 
 
+def _collides(occ: np.ndarray, mask: np.ndarray, at: tuple[int, int]) -> bool:
+    x, y = at
+    h, w = mask.shape
+    return bool((occ[y : y + h, x : x + w] & mask).any())
+
+
 def _first_free(occ: np.ndarray, mask: np.ndarray) -> tuple[int, int] | None:
     """The first position on an outward walk from the middle where `mask` fits."""
     height, width = occ.shape
@@ -105,16 +114,20 @@ def _first_free(occ: np.ndarray, mask: np.ndarray) -> tuple[int, int] | None:
 
 
 def spiral(
-    sprites: Sequence[Sprite], width: int, height: int, anchor: tuple[int, int] | None = None
+    sprites: Sequence[Sprite],
+    width: int,
+    height: int,
+    anchor: tuple[int, int] | None = None,
+    blocked: np.ndarray | None = None,
 ) -> Placed | None:
     """Place every sprite with no opaque overlap and fully on-screen, or return
     None if one does not fit. Sprites should be pre-sorted largest-first."""
-    occ = np.zeros((height, width), dtype=bool)
+    occ = np.zeros((height, width), dtype=bool) if blocked is None else blocked.copy()
     placed: Placed = []
     for n, sprite in enumerate(sprites):
-        if anchor and n == 0:
-            spot = _pinned(sprite, anchor, width, height)
-        else:
+        spot = _pinned(sprite, anchor, width, height) if anchor and n == 0 else None
+        # No anchor, or the middle is under the branch: the first free place instead.
+        if spot is None or _collides(occ, sprite.mask, spot):
             spot = _first_free(occ, sprite.mask)
         if spot is None:
             return None
@@ -212,12 +225,15 @@ def scored(
     width: int,
     height: int,
     anchor: tuple[int, int] | None = None,
+    blocked: np.ndarray | None = None,
     *,
     cost: Cost,
 ) -> Placed | None:
     """Place each sprite at the cheapest legal offset, largest first as `spiral`
     takes them, the first pinned by `anchor` if given. None if one does not fit."""
     board = Board(width, height)
+    if blocked is not None:
+        board.occ = _pool(blocked)[: board.H, : board.W]
     placed: Placed = []
     for n, sprite in enumerate(sprites):
         h, w = sprite.mask.shape
@@ -226,7 +242,7 @@ def scored(
         if not ok.any():
             return None
         spot = _pinned(sprite, anchor, width, height) if anchor and n == 0 else None
-        if spot:
+        if spot and ok[spot[1] // K, spot[0] // K]:
             y, x = spot[1] // K, spot[0] // K
         else:
             best = np.unravel_index(np.argmin(np.where(ok, cost(board, mask), np.inf)), ok.shape)

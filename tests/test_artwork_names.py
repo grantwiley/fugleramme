@@ -17,7 +17,7 @@ import json
 import re
 from pathlib import Path
 
-from fugleramme.names import BIRDS, MANIFEST, PERCHES, SUFFIXES, normalize
+from fugleramme.names import BIRDS, BRANCHES, MANIFEST, PERCHES, SUFFIXES, normalize
 from fugleramme.render.sizes import GEOMETRY
 
 REPO = Path(__file__).resolve().parents[1]
@@ -83,7 +83,7 @@ def _plates() -> list[tuple[Path, str]]:
     return [
         (plate, _base(plate.stem))
         for plate in _artwork(IMAGES)
-        if plate.parent.name != PERCHES  # perches are named for the plant
+        if plate.parent.name not in (PERCHES, BRANCHES)  # named for the plant or season
     ]
 
 

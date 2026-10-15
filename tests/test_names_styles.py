@@ -6,12 +6,15 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import date
 
 from fugleramme.names import (
     BIRDS,
+    BRANCHES,
     MANIFEST,
     PERCHES,
     available_styles,
+    branch_for,
     drawable_keys,
     image_for,
     origin_of,
@@ -230,3 +233,34 @@ def test_a_broken_manifest_is_not_fatal(tmp_path):
     _make(tmp_path, "classic", "turdus-merula")
     (tmp_path / "classic" / MANIFEST).write_text("{ not json")
     assert source_of(tmp_path / "classic" / BIRDS / "turdus-merula.png") == ""
+
+
+def test_the_branch_turns_with_the_maples_season_and_is_absent_without_its_file(tmp_path):
+    d = tmp_path / "classic" / BRANCHES
+    d.mkdir(parents=True)
+    for season in ("spring", "summer", "autumn"):
+        (d / f"{season}.webp").write_bytes(b"x")
+    picked = {
+        day: (path.stem if (path := branch_for(tmp_path, "classic", day)) else None)
+        for day in (
+            date(2026, 2, 28),
+            date(2026, 3, 1),
+            date(2026, 4, 30),
+            date(2026, 5, 1),
+            date(2026, 9, 30),
+            date(2026, 10, 1),
+            date(2026, 11, 30),
+            date(2026, 12, 1),
+        )
+    }
+    assert list(picked.values()) == [
+        None,
+        "spring",
+        "spring",
+        "summer",
+        "summer",
+        "autumn",
+        "autumn",
+        None,
+    ]  # no winter.webp: the page goes unframed rather than borrowing another season
+    assert branch_for(tmp_path, "custom", date(2026, 7, 1)) is None
